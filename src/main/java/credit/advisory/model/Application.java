@@ -3,18 +3,9 @@ package credit.advisory.model;
 import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.Hibernate;
+import org.hibernate.annotations.Type;
 
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.EnumType;
-import javax.persistence.Enumerated;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.Id;
-import javax.persistence.JoinColumn;
-import javax.persistence.ManyToOne;
-import javax.persistence.OneToOne;
-import javax.persistence.Table;
+import javax.persistence.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.Objects;
@@ -34,6 +25,7 @@ public class Application {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false)
+    @Type(type = "credit.advisory.model.EnumTypePostgres")
     private Status status;
 
     @Column(name = "created_at", insertable = false)
@@ -45,16 +37,26 @@ public class Application {
     @Column(name = "resolved_at")
     private LocalDateTime resolvedAt;
 
+    @ManyToOne
+    @JoinColumn(name = "advisor_id")
+    private Advisor advisor;
+
     @ManyToOne(optional = false)
     @JoinColumn(name = "applicant_id")
     private Applicant applicant;
 
-    @OneToOne
-    @JoinColumn(name = "advisor_id")
-    private Advisor advisor;
-
     public enum Status {
         NEW, ASSIGNED, ON_HOLD, APPROVED, CANCELLED, DECLINED
+    }
+
+    public boolean isAssigned() {
+        return status == Status.ASSIGNED;
+    }
+
+    public void assignToAdvisor(Advisor advisor) {
+        this.setAdvisor(advisor);
+        this.setStatus(Application.Status.ASSIGNED);
+        this.setAssignedAt(LocalDateTime.now());
     }
 
     @Override

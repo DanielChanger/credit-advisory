@@ -27,9 +27,8 @@ public class CreditAdvisoryService {
     public Application assignApplication(Long id) {
         Advisor advisor = getAdvisor(id);
         checkNoApplicationIsAssigned(id, advisor);
-
         Application application = getApplication(id, advisor);
-        advisor.setApplication(application);
+        advisor.assignApplication(application);
         return application;
     }
 
@@ -37,29 +36,24 @@ public class CreditAdvisoryService {
         Optional<Application> applicationOptional = switch (advisor.getRole()) {
             case ASSOCIATE -> applicationRepository.findOldestNewApplicationByAmountRange(BigDecimal.ONE, TEN_GRANDS);
             case PARTNER -> applicationRepository.findOldestNewApplicationByAmountRange(TEN_GRANDS, FIFTY_GRANDS);
-            case SENIOR -> applicationRepository.findOldestNewApplicationByAmountRange(FIFTY_GRANDS);
+            case SENIOR -> applicationRepository.findOldestNewApplicationByAmountStartingFrom(FIFTY_GRANDS);
         };
         return applicationOptional.orElseThrow(() ->
-                new ResponseStatusException(
-                        HttpStatus.NOT_FOUND,
+                new ResponseStatusException(HttpStatus.NOT_FOUND,
                         "No application to assign is found for advisor with %s id".formatted(id)
-                ));
+                )
+        );
     }
 
     private Advisor getAdvisor(Long id) {
         return advisorRepository.findById(id).orElseThrow(
-                () -> new ResponseStatusException(
-                        HttpStatus.NOT_FOUND,
-                        "Advisor with %s id is not found".formatted(id))
-        );
+                () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Advisor with %s id is not found".formatted(id)));
     }
 
     private static void checkNoApplicationIsAssigned(Long id, Advisor advisor) {
-        advisor.getApplication().ifPresent(a -> {
-            throw new ResponseStatusException(
-                    HttpStatus.CONFLICT,
-                    "Advisor with %s id already has application assigned".formatted(id)
-            );
-        });
+        if (advisor.hasAssignedApplication()) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Advisor with %s id already has application assigned"
+                    .formatted(id));
+        }
     }
 }

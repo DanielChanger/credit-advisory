@@ -1,14 +1,10 @@
 package credit.advisory.model;
 
+import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
 
-import javax.persistence.Column;
-import javax.persistence.ElementCollection;
-import javax.persistence.Embeddable;
-import javax.persistence.Embedded;
-import javax.persistence.Entity;
-import javax.persistence.Table;
+import javax.persistence.*;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -16,7 +12,7 @@ import java.util.List;
 @Table(name = "applicants")
 @Getter
 @Setter
-public class Applicant extends User {
+public class Applicant extends SystemUser {
     @Column(name = "first_name", nullable = false)
     private String firstName;
     @Column(name = "last_name", nullable = false)
@@ -25,8 +21,14 @@ public class Applicant extends User {
     private String ssn;
     @Embedded
     private Address address;
+
     @ElementCollection
+    @CollectionTable(name = "phone_numbers", joinColumns = @JoinColumn(name = "applicant_id"))
     private List<PhoneNumber> phoneNumbers = new ArrayList<>();
+
+    @OneToMany(mappedBy = "applicant")
+    @Setter(AccessLevel.PRIVATE)
+    private List<Application> applications = new ArrayList<>();
 
     @Embeddable
     @Getter
@@ -51,6 +53,7 @@ public class Applicant extends User {
     public static class PhoneNumber {
         private String number;
         private Type type;
+
         public enum Type {
             HOME, WORK, MOBILE
         }

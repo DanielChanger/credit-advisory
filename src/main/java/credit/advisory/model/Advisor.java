@@ -1,5 +1,6 @@
 package credit.advisory.model;
 
+import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -7,16 +8,16 @@ import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.EnumType;
 import javax.persistence.Enumerated;
-import javax.persistence.OneToOne;
+import javax.persistence.OneToMany;
 import javax.persistence.Table;
-import java.time.LocalDateTime;
-import java.util.Optional;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "advisors")
 @Getter
 @Setter
-public class Advisor extends User {
+public class Advisor extends SystemUser {
 
     @Column(name = "first_name", nullable = false)
     private String firstName;
@@ -26,18 +27,17 @@ public class Advisor extends User {
     @Column(name = "role", nullable = false)
     private Role role;
 
-    @OneToOne(mappedBy = "advisor")
-    private Application application;
+    @OneToMany(mappedBy = "advisor")
+    @Setter(AccessLevel.PRIVATE)
+    private List<Application> applications = new ArrayList<>();
 
-    public Optional<Application> getApplication() {
-        return Optional.ofNullable(application);
+    public boolean hasAssignedApplication() {
+        return applications.stream().anyMatch(Application::isAssigned);
     }
 
-    public void setApplication(Application application) {
-        this.application = application;
-        application.setAdvisor(this);
-        application.setStatus(Application.Status.ASSIGNED);
-        application.setAssignedAt(LocalDateTime.now());
+    public void assignApplication(Application application) {
+        application.assignToAdvisor(this);
+        applications.add(application);
     }
 
     public enum Role {

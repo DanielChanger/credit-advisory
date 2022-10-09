@@ -10,29 +10,29 @@ import java.util.Optional;
 
 @Repository
 @RequiredArgsConstructor
-public class CustomApplicationRepoImpl implements CustomApplicationRepo {
+public class CustomApplicationRepositoryImpl implements CustomApplicationRepository {
     private final EntityManager entityManager;
 
     @Override
     public Optional<Application> findOldestNewApplicationByAmountRange(BigDecimal start, BigDecimal end) {
-        return Optional.ofNullable(entityManager.createQuery("select a from Application a " +
-                                "where a.status = :status " +
-                                "and a.amount between :start and :end", Application.class)
-                .setParameter("status", "NEW")
+        return entityManager.createQuery("select a from Application a " +
+                        "where a.status = 'NEW' " +
+                        "and a.amount between :start and :end", Application.class)
                 .setParameter("start", start)
                 .setParameter("end", end)
                 .setMaxResults(1)
-                .getSingleResult());
+                .getResultStream()
+                .findFirst();
     }
 
     @Override
-    public Optional<Application> findOldestNewApplicationByAmountRange(BigDecimal start) {
-        return Optional.ofNullable(entityManager.createQuery("select a from Application a " +
-                        "where a.status = :status " +
+    public Optional<Application> findOldestNewApplicationByAmountStartingFrom(BigDecimal start) {
+        return entityManager.createQuery("select a from Application a " +
+                        "where a.status = 'NEW' " +
                         "and a.amount >= :start", Application.class)
-                .setParameter("status", "NEW")
                 .setParameter("start", start)
                 .setMaxResults(1)
-                .getSingleResult());
+                .getResultStream()
+                .findFirst();
     }
 }

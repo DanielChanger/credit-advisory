@@ -1,23 +1,17 @@
-create table if not exists users
+create type advisor_role as enum ('ASSOCIATE', 'PARTNER', 'SENIOR');
+create table if not exists advisors
 (
-    id       serial primary key,
+    id         serial       not null unique,
+    first_name text         not null,
+    last_name  text         not null,
+    role       advisor_role not null,
     username text not null unique,
     email    text not null unique
 );
 
-create type advisor_role as enum ('associate', 'partner', 'senior');
-create table if not exists advisors
-(
-    id         bigint       not null unique,
-    first_name text         not null,
-    last_name  text         not null,
-    role       advisor_role not null,
-    foreign key (id) references users (id)
-);
-
 create table if not exists applicants
 (
-    id         bigint not null unique,
+    id         serial not null unique,
     first_name text   not null,
     last_name  text   not null,
     ssn        text   not null,
@@ -26,10 +20,11 @@ create table if not exists applicants
     number     text   not null,
     zip        text   not null,
     apt        text   not null,
-    foreign key (id) references users (id)
+    username text not null unique,
+    email    text not null unique
 );
 
-create type application_status as enum ('new', 'assigned', 'on_hold', 'approved', 'cancelled', 'declined');
+create type application_status as enum ('NEW', 'ASSIGNED', 'ON_HOLD', 'APPROVED', 'CANCELLED', 'DECLINED');
 create table if not exists applications
 (
     id           serial primary key,
@@ -53,21 +48,20 @@ create table if not exists phone_numbers
     foreign key (applicant_id) references applicants (id)
 );
 
-
-INSERT INTO users(username, email)
-SELECT 'user' ||  id, 'user' || id || '@mail.com'
-FROM generate_series(1,1000) id;
-
-INSERT INTO advisors(id, first_name, last_name, role)
+INSERT INTO advisors(id, username, email, first_name, last_name, role)
 SELECT id,
+       'user' ||  id,
+       'user' || id || '@mail.com',
        md5(random()::text),
        md5(random()::text),
        (select role FROM unnest(enum_range(NULL::advisor_role)) role ORDER BY random() LIMIT 1)
 FROM generate_series(1, 1000) id;
 
 
-INSERT INTO applicants(id, first_name, last_name, ssn, city, street, number, zip, apt)
+INSERT INTO applicants(id, username, email, first_name, last_name, ssn, city, street, number, zip, apt)
 SELECT id,
+       'user' ||  id,
+       'user' || id || '@mail.com',
        md5(random()::text),
        md5(random()::text),
        md5(random()::text),
@@ -80,7 +74,7 @@ FROM generate_series(1, 1000) id;
 
 
 insert into applications(amount, status, assigned_at, resolved_at, applicant_id, advisor_id)
-select random()::double precision,
+select random()::double precision * 100,
        (select status FROM unnest(enum_range(NULL::application_status)) status ORDER BY random() LIMIT 1),
        null,
        null,
